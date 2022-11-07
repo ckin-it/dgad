@@ -14,6 +14,11 @@ from dgad.api import DGADClient, DGADServer  # type: ignore
 from dgad.prediction import Detective, Model, pretty_print
 from dgad.utils import load_labels, setup_logging
 
+def dgad_server_thread():
+    print("starting DGADServer")
+    detective = Detective()
+    server = DGADServer(detective=detective, port=4714, max_workers=10)
+    server.bootstrap()
 
 def validate_families_number(ctx: Any, param: Any, value: int) -> int:
     allowed = [52, 81]
@@ -213,6 +218,23 @@ def server(verbosity: str, port: int, families_number: int, max_workers: int) ->
     server = DGADServer(detective=detective, port=port, max_workers=max_workers)
     server.bootstrap()
 
+@click.option(
+    "-p",
+    "--port",
+    type=int,
+    default=8000,
+    help="DGAD REST API Server will listen at this port",
+)
+@cli.command()
+def ws(port: int) -> None:
+    """
+    WS listener
+    """
+    from dgad.web import app
+    import threading
+    threading.Thread(daemon=True, target=dgad_server_thread).start()
+    app.run(debug=False, host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
     cli()
+
